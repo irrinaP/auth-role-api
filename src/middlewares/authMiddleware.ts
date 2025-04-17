@@ -1,17 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { User } from '../models/userModel';
 
-declare module 'express' {
-  interface Request {
-    userId?: string;
-  }
+// Создаём тип для расширения req
+export default interface RequestWithUser extends Request {
+  user?: { _id: string; username: string; role: string }; // Указываем тип для user
 }
 
 export const authenticateJWT = async (
-  req: Request,
+  req: RequestWithUser, // Используем расширенный тип
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> => {
   const token = req.header('Authorization')?.split(' ')[1];
 
   if (!token) {
@@ -20,14 +20,20 @@ export const authenticateJWT = async (
   }
 
   try {
-    const decoded = jwt.verify(token!, process.env.JWT_SECRET!) as {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: string;
     };
 
-    req.userId = decoded.userId;
+    const user = await User.findById(decoded.userId).select('-password');
+    if (!user) {
+      res.status(401).json({ message: 'User not found.' });
+      return;
+    }
 
+    req.user = user; // Теперь TypeScript понимает тип user
     next();
-  } catch {
+  } catch (error) {
+    console.error('JWT auth error:', error);
     res.status(400).json({ message: 'Invalid token.' });
   }
 };

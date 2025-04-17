@@ -2,6 +2,11 @@ import { Request, Response } from 'express';
 import { authService } from '../services/authService';
 import { UserModel } from '../models/user';
 
+// Типизируем req с user
+interface RequestWithUser extends Request {
+  user?: { _id: string; username: string; role: string };
+}
+
 const register = async (req: Request, res: Response) => {
   try {
     const { username, password, role } = req.body;
@@ -43,9 +48,10 @@ const login = async (req: Request, res: Response) => {
   }
 };
 
-const getProfile = async (req: Request, res: Response) => {
+const getProfile = async (req: RequestWithUser, res: Response) => {
+  // Используем тип RequestWithUser
   try {
-    const userId = req.userId;
+    const userId = req.user?._id;
     if (!userId) {
       return res.status(400).json({ message: 'User not authenticated' });
     }
@@ -66,9 +72,10 @@ const getProfile = async (req: Request, res: Response) => {
   }
 };
 
-const deleteUser = async (req: Request, res: Response) => {
+const deleteUser = async (req: RequestWithUser, res: Response) => {
+  // Используем тип RequestWithUser
   try {
-    const userId = req.userId;
+    const userId = req.user?._id;
     if (!userId) {
       return res.status(400).json({ message: 'User not authenticated' });
     }

@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import { UserModel } from '../models/user';
+import { UserDocument } from '../models/userModel'; // Импортируем интерфейс UserDocument
 
-const getUserData = async (req: Request, res: Response): Promise<void> => {
+const getUserData = async (
+  req: Request & { user?: UserDocument },
+  res: Response,
+): Promise<void> => {
   try {
-    const userId = req.userId;
+    const userId = req.user?._id;
     if (!userId) {
       res.status(400).json({ error: 'User ID is missing from the request' });
       return;
@@ -25,9 +29,12 @@ const getUserData = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-const deleteUser = async (req: Request, res: Response): Promise<void> => {
+const deleteUser = async (
+  req: Request & { user?: UserDocument },
+  res: Response,
+): Promise<void> => {
   try {
-    const userId = req.userId;
+    const userId = req.user?._id;
     if (!userId) {
       res.status(400).json({ error: 'User ID is missing from the request' });
       return;
@@ -48,9 +55,12 @@ const deleteUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-const updateUserData = async (req: Request, res: Response): Promise<void> => {
+const updateUserData = async (
+  req: Request & { user?: UserDocument },
+  res: Response,
+): Promise<void> => {
   try {
-    const userId = req.userId;
+    const userId = req.user?._id;
     if (!userId) {
       res.status(400).json({ error: 'User ID is missing from the request' });
       return;

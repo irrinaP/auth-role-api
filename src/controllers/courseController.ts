@@ -4,6 +4,8 @@ import RequestWithUser from '../middlewares/authMiddleware';
 import slugify from 'slugify';
 import fs from 'fs';
 import path from 'path';
+import sharp from 'sharp';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CourseQuery {
   search?: string;
@@ -114,14 +116,49 @@ export const createCourse = async (
 
   try {
     const slug = slugify(title, { lower: true, strict: true });
-
     let savedImagePath = image;
 
     if (image && fs.existsSync(image)) {
       const ext = path.extname(image);
-      const newFileName = `${Date.now()}${ext}`;
-      const destinationPath = path.join('uploads', newFileName);
-      fs.copyFileSync(image, destinationPath);
+      const newFileName = `${uuidv4()}${ext}`;
+      const destinationDir = path.join('uploads');
+      const destinationPath = path.join(destinationDir, newFileName);
+
+      fs.mkdirSync(destinationDir, { recursive: true });
+
+      const watermarkPath = path.join(__dirname, '../../public/watermark.png');
+
+      const hasWatermark = fs.existsSync(watermarkPath);
+
+      console.log('Путь к ватермарке:', watermarkPath);
+      console.log('Существует ли ватермарка?', hasWatermark);
+
+      const baseImage = sharp(image).resize({ width: 800 });
+
+      if (hasWatermark) {
+        const watermarkBuffer = await sharp(watermarkPath)
+          .removeAlpha()
+          .resize(200, 200)
+          .toBuffer();
+
+        console.log('Буфер ватермарки:', watermarkBuffer);
+
+        await baseImage
+          .composite([
+            {
+              input: watermarkBuffer,
+              gravity: 'southeast',
+              blend: 'over',
+            },
+          ])
+          .toFile(destinationPath)
+          .catch((err) => {
+            console.error('Ошибка при наложении ватермарки:', err);
+          });
+      } else {
+        await baseImage.toFile(destinationPath);
+      }
+
       savedImagePath = destinationPath;
     }
 
@@ -139,6 +176,7 @@ export const createCourse = async (
 
     res.status(201).json(newCourse);
   } catch (err: unknown) {
+    console.error('Ошибка при создании курса:', err);
     res.status(400).json({
       message: 'Ошибка при создании курса',
       error: err instanceof Error ? err.message : 'Неизвестная ошибка',

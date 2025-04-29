@@ -2,13 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/userModel';
 
-// Создаём тип для расширения req
 export default interface RequestWithUser extends Request {
-  user?: { _id: string; username: string; role: string }; // Указываем тип для user
+  user?: { _id: string; username: string; role: string };
 }
 
 export const authenticateJWT = async (
-  req: RequestWithUser, // Используем расширенный тип
+  req: RequestWithUser,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -30,7 +29,7 @@ export const authenticateJWT = async (
       return;
     }
 
-    req.user = user; // Теперь TypeScript понимает тип user
+    req.user = user;
     next();
   } catch (error) {
     console.error('JWT auth error:', error);

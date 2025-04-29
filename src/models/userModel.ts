@@ -1,7 +1,5 @@
-// src/models/userModel.ts
 import mongoose, { Document, Schema } from 'mongoose';
 
-// Интерфейс без наследования от Document (может быть переиспользован)
 export interface IUser {
   email: string;
   password: string;
@@ -9,7 +7,6 @@ export interface IUser {
   role?: 'user' | 'admin';
 }
 
-// Интерфейс для документа (включает _id и методы mongoose)
 export interface UserDocument extends IUser, Document {
   _id: mongoose.Types.ObjectId;
 }

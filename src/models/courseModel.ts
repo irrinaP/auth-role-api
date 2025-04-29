@@ -16,25 +16,58 @@ export interface ICourse extends Document {
 }
 
 const courseSchema = new Schema<ICourse>({
-  title: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-  description: { type: String },
-  price: { type: Number, required: true },
-  image: { type: String, required: true },
-  category: { type: String, required: true },
+  title: {
+    type: String,
+    required: [true, 'Название курса обязательно'],
+    trim: true,
+  },
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  description: {
+    type: String,
+    trim: true,
+  },
+  price: {
+    type: Number,
+    required: [true, 'Цена курса обязательна'],
+    min: [0, 'Цена не может быть отрицательной'],
+  },
+  image: {
+    type: String,
+    required: [true, 'Изображение обязательно'],
+  },
+  category: {
+    type: String,
+    required: [true, 'Категория обязательна'],
+  },
   level: {
     type: String,
     enum: ['beginner', 'intermediate', 'advanced'],
     default: 'beginner',
     required: true,
   },
-  published: { type: Boolean, default: false },
-  author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  tags: [{ type: String }],
-  createdAt: { type: Date, default: Date.now },
+  published: {
+    type: Boolean,
+    default: false,
+  },
+  author: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Автор обязателен'],
+  },
+  tags: {
+    type: [String],
+    default: [],
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-// Автоматическая генерация slug перед сохранением
 courseSchema.pre('save', function (next) {
   if (!this.isModified('title')) return next();
   this.slug = slugify(this.title, { lower: true, strict: true });

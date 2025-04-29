@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { authService } from '../services/authService';
 import { UserModel } from '../models/user';
 
-// Типизируем req с user
 interface RequestWithUser extends Request {
   user?: { _id: string; username: string; role: string };
 }
@@ -49,7 +48,6 @@ const login = async (req: Request, res: Response) => {
 };
 
 const getProfile = async (req: RequestWithUser, res: Response) => {
-  // Используем тип RequestWithUser
   try {
     const userId = req.user?._id;
     if (!userId) {
@@ -73,7 +71,6 @@ const getProfile = async (req: RequestWithUser, res: Response) => {
 };
 
 const deleteUser = async (req: RequestWithUser, res: Response) => {
-  // Используем тип RequestWithUser
   try {
     const userId = req.user?._id;
     if (!userId) {

@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db';
+import path from 'path';
 
 import authRoutes from './routes/authRoutes';
 import pingRoutes from './routes/pingRoutes';
@@ -20,6 +21,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', pingRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/uploads', express.static(path.resolve('uploads')));
 
 app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);

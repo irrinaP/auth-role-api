@@ -1,6 +1,5 @@
 import { User } from '../models/userModel';
 
-// Расширяем интерфейс Request, добавляя свойство user
 declare global {
   namespace Express {
     interface Request {
@@ -9,5 +8,4 @@ declare global {
   }
 }
 
-// Это необходимо для правильного применения типов в проекте
 export {};

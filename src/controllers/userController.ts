@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { UserModel } from '../models/user';
-import { UserDocument } from '../models/userModel'; // Импортируем интерфейс UserDocument
+import { UserDocument } from '../models/userModel';
 
 const getUserData = async (
   req: Request & { user?: UserDocument },

@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { Course } from '../models/courseModel';
 import RequestWithUser from '../middlewares/authMiddleware';
+import slugify from 'slugify';
+import fs from 'fs';
+import path from 'path';
 
-// Тип для query-параметров
 interface CourseQuery {
   search?: string;
   category?: string;
@@ -12,7 +14,6 @@ interface CourseQuery {
   sort?: string;
 }
 
-// Тип для тела курса
 interface CourseBody {
   title: string;
   description?: string;
@@ -23,16 +24,14 @@ interface CourseBody {
   tags?: string[];
 }
 
-// Тип фильтра для MongoDB
 type CourseFilter = {
   title?: { $regex: string; $options: string };
   category?: string;
   level?: string;
 };
 
-// Получить все курсы
 export const getAllCourses = async (
-  req: Request<Record<string, unknown>, unknown, unknown, CourseQuery>, // заменили {} на Record<string, unknown> и unknown
+  req: Request<Record<string, unknown>, unknown, unknown, CourseQuery>,
   res: Response,
 ): Promise<void> => {
   try {
@@ -46,18 +45,10 @@ export const getAllCourses = async (
     } = req.query;
 
     const filter: CourseFilter = {};
-
-    if (typeof search === 'string') {
+    if (typeof search === 'string')
       filter.title = { $regex: search, $options: 'i' };
-    }
-
-    if (typeof category === 'string') {
-      filter.category = category;
-    }
-
-    if (typeof level === 'string') {
-      filter.level = level;
-    }
+    if (typeof category === 'string') filter.category = category;
+    if (typeof level === 'string') filter.level = level;
 
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
@@ -83,9 +74,8 @@ export const getAllCourses = async (
   }
 };
 
-// Получить курс по ID
 export const getCourseById = async (
-  req: Request<{ id: string }>, // уточнили тип параметра
+  req: Request<{ id: string }>,
   res: Response,
 ): Promise<void> => {
   try {
@@ -104,34 +94,71 @@ export const getCourseById = async (
   }
 };
 
-// Создание курса
 export const createCourse = async (
   req: RequestWithUser,
   res: Response,
 ): Promise<void> => {
-  // Теперь TypeScript знает о req.user
-  const user = req.user; // Убрали type assertion
+  const user = req.user;
 
   if (!user) {
     res.status(401).json({ message: 'Неавторизованный доступ' });
     return;
   }
 
-  const newCourse = await Course.create({
-    ...req.body,
-    author: user._id,
-  });
+  const { title, description, price, image, category, level, tags } = req.body;
 
-  res.status(201).json(newCourse);
+  if (!title) {
+    res.status(400).json({ message: 'Поле "title" обязательно' });
+    return;
+  }
+
+  try {
+    const slug = slugify(title, { lower: true, strict: true });
+
+    let savedImagePath = image;
+
+    if (image && fs.existsSync(image)) {
+      const ext = path.extname(image);
+      const newFileName = `${Date.now()}${ext}`;
+      const destinationPath = path.join('uploads', newFileName);
+      fs.copyFileSync(image, destinationPath);
+      savedImagePath = destinationPath;
+    }
+
+    const newCourse = await Course.create({
+      title,
+      slug,
+      description,
+      price,
+      image: savedImagePath,
+      category,
+      level,
+      tags,
+      author: user._id,
+    });
+
+    res.status(201).json(newCourse);
+  } catch (err: unknown) {
+    res.status(400).json({
+      message: 'Ошибка при создании курса',
+      error: err instanceof Error ? err.message : 'Неизвестная ошибка',
+    });
+  }
 };
 
-// Обновление курса
 export const updateCourse = async (
-  req: Request<{ id: string }, unknown, Partial<CourseBody>>, // уточнили тип параметра и тела
+  req: Request<{ id: string }, unknown, Partial<CourseBody>>,
   res: Response,
 ): Promise<void> => {
   try {
-    const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
+    const updatedData = {
+      ...req.body,
+      ...(req.body.title
+        ? { slug: slugify(req.body.title, { lower: true, strict: true }) }
+        : {}),
+    };
+
+    const course = await Course.findByIdAndUpdate(req.params.id, updatedData, {
       new: true,
     });
 
@@ -149,7 +176,6 @@ export const updateCourse = async (
   }
 };
 
-// Удаление курса
 export const deleteCourse = async (
   req: Request<{ id: string }>,
   res: Response,

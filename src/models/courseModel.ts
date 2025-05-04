@@ -10,7 +10,7 @@ export interface ICourse extends Document {
   category: string;
   level: 'beginner' | 'intermediate' | 'advanced';
   published: boolean;
-  isFavorite?: boolean; // ✅ добавлено
+  isFavorite?: boolean; 
   author: mongoose.Types.ObjectId;
   tags?: string[];
   createdAt: Date;
@@ -56,7 +56,7 @@ const courseSchema = new Schema<ICourse>({
   },
   isFavorite: {
     type: Boolean,
-    default: false, // ✅ по умолчанию false
+    default: false, 
   },
   author: {
     type: Schema.Types.ObjectId,

@@ -24,12 +24,42 @@ interface CourseBody {
   category: string;
   level?: 'beginner' | 'intermediate' | 'advanced';
   tags?: string[];
+  isFavorite?: boolean;
 }
 
 type CourseFilter = {
   title?: { $regex: string; $options: string };
   category?: string;
   level?: string;
+};
+
+const processImage = async (imagePath: string): Promise<string> => {
+  const ext = path.extname(imagePath);
+  const newFileName = `${uuidv4()}${ext}`;
+  const destinationDir = path.join('uploads');
+  const destinationPath = path.join(destinationDir, newFileName);
+
+  fs.mkdirSync(destinationDir, { recursive: true });
+
+  const watermarkPath = path.join(__dirname, '../../public/watermark.png');
+  const hasWatermark = fs.existsSync(watermarkPath);
+
+  const baseImage = sharp(imagePath).resize({ width: 800 });
+
+  if (hasWatermark) {
+    const watermarkBuffer = await sharp(watermarkPath)
+      .removeAlpha()
+      .resize(200, 200)
+      .toBuffer();
+
+    await baseImage
+      .composite([{ input: watermarkBuffer, gravity: 'southeast' }])
+      .toFile(destinationPath);
+  } else {
+    await baseImage.toFile(destinationPath);
+  }
+
+  return destinationPath;
 };
 
 export const getAllCourses = async (
@@ -87,7 +117,7 @@ export const getCourseById = async (
       return;
     }
 
-    res.json(course);
+    res.status(200).json(course);
   } catch (err: unknown) {
     res.status(500).json({
       message: 'Ошибка при получении курса',
@@ -100,17 +130,17 @@ export const createCourse = async (
   req: RequestWithUser,
   res: Response,
 ): Promise<void> => {
-  const user = req.user;
-
-  if (!user) {
+  if (!req.user) {
     res.status(401).json({ message: 'Неавторизованный доступ' });
     return;
   }
 
   const { title, description, price, image, category, level, tags } = req.body;
 
-  if (!title) {
-    res.status(400).json({ message: 'Поле "title" обязательно' });
+  if (!title || !price || !image || !category) {
+    res
+      .status(400)
+      .json({ message: 'Обязательные поля: title, price, image, category' });
     return;
   }
 
@@ -118,48 +148,8 @@ export const createCourse = async (
     const slug = slugify(title, { lower: true, strict: true });
     let savedImagePath = image;
 
-    if (image && fs.existsSync(image)) {
-      const ext = path.extname(image);
-      const newFileName = `${uuidv4()}${ext}`;
-      const destinationDir = path.join('uploads');
-      const destinationPath = path.join(destinationDir, newFileName);
-
-      fs.mkdirSync(destinationDir, { recursive: true });
-
-      const watermarkPath = path.join(__dirname, '../../public/watermark.png');
-
-      const hasWatermark = fs.existsSync(watermarkPath);
-
-      console.log('Путь к ватермарке:', watermarkPath);
-      console.log('Существует ли ватермарка?', hasWatermark);
-
-      const baseImage = sharp(image).resize({ width: 800 });
-
-      if (hasWatermark) {
-        const watermarkBuffer = await sharp(watermarkPath)
-          .removeAlpha()
-          .resize(200, 200)
-          .toBuffer();
-
-        console.log('Буфер ватермарки:', watermarkBuffer);
-
-        await baseImage
-          .composite([
-            {
-              input: watermarkBuffer,
-              gravity: 'southeast',
-              blend: 'over',
-            },
-          ])
-          .toFile(destinationPath)
-          .catch((err) => {
-            console.error('Ошибка при наложении ватермарки:', err);
-          });
-      } else {
-        await baseImage.toFile(destinationPath);
-      }
-
-      savedImagePath = destinationPath;
+    if (fs.existsSync(image)) {
+      savedImagePath = await processImage(image);
     }
 
     const newCourse = await Course.create({
@@ -171,7 +161,7 @@ export const createCourse = async (
       category,
       level,
       tags,
-      author: user._id,
+      author: req.user._id,
     });
 
     res.status(201).json(newCourse);
@@ -226,7 +216,7 @@ export const deleteCourse = async (
       return;
     }
 
-    res.json({ message: 'Курс удалён' });
+    res.status(200).json({ message: 'Курс удалён' });
   } catch (err: unknown) {
     res.status(500).json({
       message: 'Ошибка при удалении курса',

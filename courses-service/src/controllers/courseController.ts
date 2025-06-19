@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Course } from '../models/courseModel';
-import RequestWithUser from '../middlewares/authMiddleware';
+import { RequestWithUser } from '../middlewares/authMiddleware';
 import slugify from 'slugify';
 import fs from 'fs';
 import path from 'path';

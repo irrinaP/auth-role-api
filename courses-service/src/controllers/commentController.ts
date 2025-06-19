@@ -7,7 +7,7 @@ export const createComment = async (
 ): Promise<void> => {
   try {
     const { lesson, text } = req.body;
-    const userId = req.user?._id;
+    const userId = (req as any).user?._id;
     res.send(`User ID: ${userId}`);
 
     const comment = await Comment.create({ user: userId, lesson, text });

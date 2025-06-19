@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { authService } from '../services/authService';
+import { authService } from '../../src/services/authService';
 import { UserModel } from '../models/user';
 
 interface RequestWithUser extends Request {

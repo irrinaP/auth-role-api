@@ -2,8 +2,14 @@ import { Request, Response } from 'express';
 import Enrollment from '../models/enrollmentModel';
 import Lesson from '../models/lessonModel';
 
+interface RequestWithUser extends Request {
+  user?: {
+    _id: string;
+  };
+}
+
 export const enrollInCourse = async (
-  req: Request,
+  req: RequestWithUser,
   res: Response,
 ): Promise<void> => {
   try {
@@ -31,7 +37,7 @@ export const enrollInCourse = async (
 };
 
 export const getCourseProgress = async (
-  req: Request,
+  req: RequestWithUser,
   res: Response,
 ): Promise<void> => {
   try {
@@ -60,7 +66,7 @@ export const getCourseProgress = async (
 };
 
 export const uncompleteLesson = async (
-  req: Request,
+  req: RequestWithUser,
   res: Response,
 ): Promise<void> => {
   try {
@@ -88,13 +94,17 @@ export const uncompleteLesson = async (
   }
 };
 
-export const countStudentsOnCourse = async (req: Request, res: Response) => {
+export const countStudentsOnCourse = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const { courseId } = req.params;
   const count = await Enrollment.countDocuments({ course: courseId });
   res.json({ courseId, studentCount: count });
 };
+
 export const completeLesson = async (
-  req: Request,
+  req: RequestWithUser,
   res: Response,
 ): Promise<void> => {
   try {

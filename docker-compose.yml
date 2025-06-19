@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo
+    container_name: mongo
+    ports:
+      - '27017:27017'
+    networks:
+      - app-network
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'mongo', '--eval', "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:15672']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - '3000:3000'
+    depends_on:
+      - rabbitmq
+      - user-service
+      - courses-service
+    env_file:
+      - ./api-gateway/.env
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  user-service:
+    build:
+      context: ./user-service
+    container_name: user-service
+    ports:
+      - '3001:3001'
+    depends_on:
+      - mongodb
+      - rabbitmq
+    env_file:
+      - ./user-service/.env
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  courses-service:
+    build:
+      context: ./courses-service
+    container_name: courses-service
+    ports:
+      - '3002:3002'
+    depends_on:
+      - mongodb
+      - rabbitmq
+    env_file:
+      - ./courses-service/.env
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3002/health']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongo-data:

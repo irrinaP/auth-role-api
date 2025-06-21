@@ -27,7 +27,7 @@ connectDB().then(() => {
 });
 
 async function startRabbitMQConsumer() {
-  const connection = await amqp.connect('amqp://localhost');
+  const connection = await amqp.connect('amqp://rabbitmq');
   const channel = await connection.createChannel();
 
   const queue = 'course-service';
@@ -43,7 +43,6 @@ async function startRabbitMQConsumer() {
 
     if (content.path === '/courses' && content.method === 'GET') {
       console.log('📘 Получение списка курсов...');
-      // Можно вставить Mongo-запрос к курсам
     }
 
     channel.ack(msg);

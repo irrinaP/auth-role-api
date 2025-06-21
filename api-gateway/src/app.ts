@@ -13,7 +13,6 @@ let isRabbitMQReady = false;
 app.use(cors());
 app.use(express.json());
 
-// Подключение к RabbitMQ
 connectToRabbitMQ()
   .then(() => {
     console.log('✔ Gateway подключен к RabbitMQ');
@@ -23,7 +22,6 @@ connectToRabbitMQ()
     console.error('❌ Ошибка подключения к RabbitMQ:', err);
   });
 
-// Middleware: проверка готовности RabbitMQ
 const checkRabbitMQReady: RequestHandler = (req, res, next) => {
   if (!isRabbitMQReady) {
     res.status(503).json({ error: 'Сервис временно недоступен' });
@@ -34,7 +32,6 @@ const checkRabbitMQReady: RequestHandler = (req, res, next) => {
 
 app.use('/api', checkRabbitMQReady);
 
-// Основной обработчик
 app.all(/^\/api\/.*/, async (req: Request, res: Response): Promise<void> => {
   const { method, body, query, path } = req;
   const statusId = generateCorrelationId();
@@ -77,7 +74,6 @@ app.all(/^\/api\/.*/, async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// Сопоставление маршрутов с очередями
 const serviceToQueueMap: Record<string, string> = {
   user: 'user-service',
   status: 'status-service',
@@ -88,7 +84,6 @@ const serviceToQueueMap: Record<string, string> = {
   enrollment: 'enrollment-service',
 };
 
-// Определение сервиса по URL
 function determineService(path: string): string {
   const lower = path.toLowerCase();
   if (lower.includes('/auth') || lower.includes('/users')) return 'user';
@@ -101,12 +96,10 @@ function determineService(path: string): string {
   return 'unknown';
 }
 
-// Генерация уникального ID для запроса
 function generateCorrelationId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
-// Запуск сервера
 app.listen(PORT, () => {
   console.log(`🚀 Gateway запущен на порту ${PORT}`);
 });
